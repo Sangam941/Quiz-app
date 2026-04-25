@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId) && (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+      ) || isAdmin();
+    }
+
+    // --- Subjects & Topics ---
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /topics/{topicId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // --- Questions ---
+    match /questions/{questionId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow create: if isSignedIn(); // Users can suggest questions (pending)
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Attempts ---
+    match /attempts/{attemptId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+  }
+}
