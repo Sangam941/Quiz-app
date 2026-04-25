@@ -26,7 +26,7 @@ interface Stats {
 }
 
 export default function Dashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, userData, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<Stats>({
     totalAttempts: 0,
     totalQuestions: 0,
@@ -44,13 +44,16 @@ export default function Dashboard() {
       if (!user) return;
       
       try {
+        // Query without orderBy to avoid composite index requirement in dev
         const q = query(
           collection(db, 'attempts'),
-          where('userId', '==', user.uid),
-          orderBy('completedAt', 'desc')
+          where('userId', '==', user.uid)
         );
         const snapshot = await getDocs(q);
-        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Sort locally instead
+        const docs = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
         
         if (!isMounted) return;
 
@@ -230,6 +233,26 @@ export default function Dashboard() {
               {/* Decorative elements */}
               <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-white/20 rounded-full blur-[80px] pointer-events-none group-hover:scale-125 transition-transform duration-700" />
             </div>
+
+            {/* Admin Quick Link */}
+            {userData?.role === 'admin' && (
+              <div className="bg-amber-500 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-amber-500/20 relative group overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-3xl font-black tracking-tight mb-4 font-display leading-[1.1]">Admin <br />Dashboard</h3>
+                  <p className="text-amber-100 text-sm mb-10 leading-relaxed font-medium">
+                    Manage subjects, generate new questions via AI, and moderate the practice bank.
+                  </p>
+                  <Link 
+                    href="/admin"
+                    className="inline-flex items-center justify-center w-full py-5 bg-white text-amber-600 font-black rounded-2xl shadow-xl hover:scale-105 transition-all group uppercase tracking-widest text-xs"
+                  >
+                    Enter Control Panel
+                    <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+                <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/20 rounded-full blur-[60px] pointer-events-none" />
+              </div>
+            )}
 
             <div className="glass-card rounded-[2.5rem] p-10">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 border-b border-white/10 pb-4">Subject Mastery</h3>

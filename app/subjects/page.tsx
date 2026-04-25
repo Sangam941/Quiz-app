@@ -53,7 +53,7 @@ export default function SubjectsPage() {
   }, []);
 
   useEffect(() => {
-    fetchSubjects();
+    setTimeout(() => fetchSubjects(), 0);
   }, [fetchSubjects]);
 
   return (

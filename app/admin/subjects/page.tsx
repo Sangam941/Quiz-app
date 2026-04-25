@@ -39,6 +39,10 @@ export default function SubjectsAdmin() {
   const [desc, setDesc] = useState('');
   const [icon, setIcon] = useState('Book');
 
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchSubjects = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,31 +57,67 @@ export default function SubjectsAdmin() {
   }, []);
 
   useEffect(() => {
-    fetchSubjects();
+    setTimeout(() => fetchSubjects(), 0);
   }, [fetchSubjects]);
 
   const addSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'subjects'), {
-        name,
-        description: desc,
-        icon,
-        createdAt: new Date().toISOString(),
-      });
+      if (editingSubject) {
+        await updateDoc(doc(db, 'subjects', editingSubject.id), {
+          name,
+          description: desc,
+          icon,
+        });
+        setEditingSubject(null);
+        alert('Subject updated successfully!');
+      } else {
+        await addDoc(collection(db, 'subjects'), {
+          name,
+          description: desc,
+          icon,
+          createdAt: new Date().toISOString(),
+        });
+        alert('Subject created successfully!');
+      }
       setName('');
       setDesc('');
+      setIcon('Book');
       fetchSubjects();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert('Error: ' + err.message);
     }
   };
 
-  const deleteSubject = async (id: string) => {
-    if (confirm('Delete this subject and all its related topics?')) {
-      await deleteDoc(doc(db, 'subjects', id));
-      setSubjects(subjects.filter(s => s.id !== id));
+  const deleteSubject = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'subjects', deleteId));
+      alert('Subject deleted!');
+      setDeleteId(null);
+      fetchSubjects();
+    } catch (err: any) {
+      alert('Delete failed: ' + err.message);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const startEdit = (sub: Subject) => {
+    setEditingSubject(sub);
+    setName(sub.name);
+    setDesc(sub.description);
+    setIcon(sub.icon);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingSubject(null);
+    setName('');
+    setDesc('');
+    setIcon('Book');
   };
 
   return (
@@ -94,7 +134,9 @@ export default function SubjectsAdmin() {
           {/* Add Subject Form */}
           <div className="lg:w-1/3">
             <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100">
-               <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Add New Subject</h3>
+               <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">
+                 {editingSubject ? 'Edit Subject' : 'Add New Subject'}
+               </h3>
                <form onSubmit={addSubject} className="space-y-6">
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Subject Name</label>
@@ -134,13 +176,33 @@ export default function SubjectsAdmin() {
                        ))}
                     </div>
                   </div>
-                  <button
-                    type="submit"
-                    className="w-full py-4 bg-gray-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Create Subject
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="flex-1 py-4 bg-gray-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                    >
+                      {editingSubject ? (
+                        <>
+                          <Edit3 className="h-5 w-5" />
+                          Update Subject
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-5 w-5" />
+                          Create Subject
+                        </>
+                      )}
+                    </button>
+                    {editingSubject && (
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="px-6 py-4 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                </form>
             </div>
           </div>
@@ -170,11 +232,14 @@ export default function SubjectsAdmin() {
                                  </div>
                               </div>
                               <div className="flex gap-2">
-                                <button className="p-3 bg-white text-gray-400 rounded-xl hover:text-blue-600 border border-gray-100 hover:border-blue-100 transition-all">
+                                <button 
+                                  onClick={() => startEdit(sub)}
+                                  className="p-3 bg-white text-gray-400 rounded-xl hover:text-blue-600 border border-gray-100 hover:border-blue-100 transition-all"
+                                >
                                     <Edit3 className="h-4 w-4" />
                                 </button>
                                 <button 
-                                  onClick={() => deleteSubject(sub.id)}
+                                  onClick={() => setDeleteId(sub.id)}
                                   className="p-3 bg-white text-gray-400 rounded-xl hover:text-red-600 border border-gray-100 hover:border-red-100 transition-all"
                                 >
                                     <Trash2 className="h-4 w-4" />
@@ -194,6 +259,49 @@ export default function SubjectsAdmin() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+            onClick={() => setDeleteId(null)}
+          />
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative bg-white rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full border border-gray-100"
+          >
+            <div className="text-center">
+              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="h-10 w-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">Are you sure?</h3>
+              <p className="text-gray-500 font-medium mb-10 text-sm leading-relaxed">
+                This action will delete the subject from the system. Linked questions will remain but won&apos;t be easily accessible.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  disabled={isDeleting}
+                  onClick={deleteSubject}
+                  className="w-full py-4 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 transition-all uppercase tracking-widest text-[10px] disabled:opacity-50"
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, Delete it'}
+                </button>
+                <button
+                  disabled={isDeleting}
+                  onClick={() => setDeleteId(null)}
+                  className="w-full py-4 bg-gray-100 text-gray-600 font-black rounded-2xl hover:bg-gray-200 transition-all uppercase tracking-widest text-[10px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

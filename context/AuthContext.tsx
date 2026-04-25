@@ -34,7 +34,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
+          const data = userDoc.data() as UserData;
+          // Auto-upgrade this specific user to admin if they are the owner
+          if (user.email === 'sangamstomp@gmail.com' && data.role !== 'admin') {
+            setUserData({ ...data, role: 'admin' });
+          } else {
+            setUserData(data);
+          }
+        } else if (user.email === 'sangamstomp@gmail.com') {
+          // If profile doesn't exist yet but it's the owner, mock admin data
+          setUserData({ role: 'admin', email: user.email, displayName: user.displayName || 'Owner' });
         }
       } else {
         setUserData(null);

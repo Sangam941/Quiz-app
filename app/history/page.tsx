@@ -23,13 +23,17 @@ export default function HistoryPage() {
 
   const fetchHistory = useCallback(async () => {
     try {
+      // Query without orderBy to avoid composite index requirement
       const q = query(
         collection(db, 'attempts'),
-        where('userId', '==', user?.uid),
-        orderBy('completedAt', 'desc')
+        where('userId', '==', user?.uid)
       );
       const snapshot = await getDocs(q);
-      setAttempts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+      
+      setAttempts(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,7 +43,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (user) {
-      fetchHistory();
+      setTimeout(() => fetchHistory(), 0);
     }
   }, [user, fetchHistory]);
 

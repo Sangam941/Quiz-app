@@ -62,7 +62,7 @@ export default function QuizSetupPage({ params }: { params: Promise<{ subjectId:
   }, [subjectId]);
 
   useEffect(() => {
-    fetchData();
+    setTimeout(() => fetchData(), 0);
   }, [subjectId, fetchData]);
 
   const startQuiz = () => {
