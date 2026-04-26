@@ -14,7 +14,8 @@ import {
   Calculator, 
   TrendingUp, 
   Handshake,
-  LayoutGrid
+  LayoutGrid,
+  RefreshCw
 } from 'lucide-react';
 
 interface Subject {
@@ -42,6 +43,7 @@ export default function SubjectsAdmin() {
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchSubjects = useCallback(async () => {
     setLoading(true);
@@ -62,6 +64,7 @@ export default function SubjectsAdmin() {
 
   const addSubject = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       if (editingSubject) {
         await updateDoc(doc(db, 'subjects', editingSubject.id), {
@@ -87,6 +90,8 @@ export default function SubjectsAdmin() {
     } catch (err: any) {
       console.error(err);
       alert('Error: ' + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -145,7 +150,7 @@ export default function SubjectsAdmin() {
                       type="text" 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-gray-50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-blue-500 transition-all font-bold"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold text-gray-900 placeholder:text-gray-500"
                       placeholder="e.g. Economics"
                     />
                   </div>
@@ -155,7 +160,7 @@ export default function SubjectsAdmin() {
                       required
                       value={desc}
                       onChange={(e) => setDesc(e.target.value)}
-                      className="w-full bg-gray-50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-blue-500 transition-all font-bold min-h-[100px]"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold text-gray-900 placeholder:text-gray-500 min-h-[100px]"
                       placeholder="Brief overview..."
                     />
                   </div>
@@ -179,9 +184,15 @@ export default function SubjectsAdmin() {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      className="flex-1 py-4 bg-gray-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                      disabled={isSaving}
+                      className="flex-1 py-4 bg-gray-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {editingSubject ? (
+                      {isSaving ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                          Saving...
+                        </>
+                      ) : editingSubject ? (
                         <>
                           <Edit3 className="h-5 w-5" />
                           Update Subject

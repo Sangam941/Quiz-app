@@ -106,7 +106,7 @@ export default function AuthPage() {
                     type="text"
                     required
                     placeholder="Full Name"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 outline-none transition-all font-medium"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-gray-900 placeholder:text-gray-500"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
@@ -120,7 +120,7 @@ export default function AuthPage() {
                 type="email"
                 required
                 placeholder="Email address"
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-gray-900 placeholder:text-gray-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -132,7 +132,7 @@ export default function AuthPage() {
                 type="password"
                 required
                 placeholder="Password"
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-gray-900 placeholder:text-gray-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
