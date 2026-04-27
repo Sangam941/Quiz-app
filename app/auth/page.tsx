@@ -6,7 +6,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
-  GoogleAuthProvider 
+  GoogleAuthProvider,
+  signOut
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -30,6 +31,7 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
+        router.push('/dashboard')
       } else {
         const { user } = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'users', user.uid), {
@@ -39,8 +41,8 @@ export default function AuthPage() {
           role: 'user',
           createdAt: new Date().toISOString(),
         });
+        router.push('/dashboard')
       }
-      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
