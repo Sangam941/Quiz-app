@@ -32,18 +32,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data() as UserData;
-          // Auto-upgrade this specific user to admin if they are the owner
-          if (user.email === 'sangamstomp@gmail.com' && data.role !== 'admin') {
-            setUserData({ ...data, role: 'admin' });
-          } else {
-            setUserData(data);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data() as UserData;
+            // Auto-upgrade this specific user to admin if they are the owner
+            if (user.email === 'sangamstomp@gmail.com' && data.role !== 'admin') {
+              setUserData({ ...data, role: 'admin' });
+            } else {
+              setUserData(data);
+            }
+          } else if (user.email === 'sangamstomp@gmail.com') {
+            // If profile doesn't exist yet but it's the owner, mock admin data
+            setUserData({ role: 'admin', email: user.email, displayName: user.displayName || 'Owner' });
           }
-        } else if (user.email === 'sangamstomp@gmail.com') {
-          // If profile doesn't exist yet but it's the owner, mock admin data
-          setUserData({ role: 'admin', email: user.email, displayName: user.displayName || 'Owner' });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          if (user.email === 'sangamstomp@gmail.com') {
+            setUserData({ role: 'admin', email: user.email, displayName: user.displayName || 'Owner' });
+          }
         }
       } else {
         setUserData(null);
