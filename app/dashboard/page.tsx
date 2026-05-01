@@ -57,8 +57,6 @@ export default function Dashboard() {
         
         if (!isMounted) return;
 
-        setRecentAttempts(docs.slice(0, 5));
-
         const newStats: Stats = {
           totalAttempts: docs.length,
           totalQuestions: 0,
@@ -67,16 +65,29 @@ export default function Dashboard() {
           subjectStats: {},
         };
 
+        const subjectsSnapshot = await getDocs(collection(db, 'subjects'));
+        const subjectsMap: Record<string, string> = {};
+        subjectsSnapshot.docs.forEach(doc => {
+          subjectsMap[doc.id] = doc.data().name;
+        });
+
+        // Add subject names to recent attempts
+        const attemptsWithSubjects = docs.slice(0, 5).map((attempt: any) => ({
+           ...attempt,
+           subjectName: subjectsMap[attempt.subjectId] || 'Practice Quiz'
+        }));
+        setRecentAttempts(attemptsWithSubjects);
+
         docs.forEach((attempt: any) => {
           newStats.totalQuestions += attempt.totalQuestions;
           newStats.correctAnswers += attempt.score;
           
-          const subId = attempt.subjectId || 'Other';
-          if (!newStats.subjectStats[subId]) {
-            newStats.subjectStats[subId] = { total: 0, correct: 0 };
+          const subName = subjectsMap[attempt.subjectId] || attempt.subjectId || 'Other';
+          if (!newStats.subjectStats[subName]) {
+            newStats.subjectStats[subName] = { total: 0, correct: 0 };
           }
-          newStats.subjectStats[subId].total += attempt.totalQuestions;
-          newStats.subjectStats[subId].correct += attempt.score;
+          newStats.subjectStats[subName].total += attempt.totalQuestions;
+          newStats.subjectStats[subName].correct += attempt.score;
         });
 
         newStats.accuracy = newStats.totalQuestions > 0 
@@ -196,7 +207,7 @@ export default function Dashboard() {
                           <span className="text-[7px] uppercase font-black text-slate-500">ACC</span>
                         </div>
                         <div>
-                          <div className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors uppercase tracking-tight">{attempt.subjectId || 'Practice Quiz'}</div>
+                          <div className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors uppercase tracking-tight">{attempt.subjectName}</div>
                           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-0.5">
                             {new Date(attempt.completedAt).toLocaleDateString()} • {attempt.totalQuestions} Questions
                           </div>
@@ -257,19 +268,27 @@ export default function Dashboard() {
             <div className="glass-card rounded-[2.5rem] p-10">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 border-b border-white/10 pb-4">Subject Mastery</h3>
               <div className="space-y-8">
-                {['Economics', 'Accounting', 'Business Law'].map(sub => (
+                {Object.keys(stats.subjectStats).slice(0, 3).map((sub, i) => (
                   <div key={sub} className="space-y-3">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-white uppercase tracking-widest">{sub}</span>
-                        <span className="text-[10px] font-bold text-indigo-400">Level 3</span>
+                        <span className="text-[10px] font-bold text-indigo-400">Level {Math.max(1, Math.ceil((stats.subjectStats[sub].correct / stats.subjectStats[sub].total) * 5))}</span>
                     </div>
                     <div className="flex gap-1.5">
-                      {[1,2,3,4,5].map(star => (
-                        <div key={star} className={`h-1.5 flex-1 rounded-full ${star <= 3 ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-white/5'}`} />
-                      ))}
+                      {[1,2,3,4,5].map(star => {
+                        const level = Math.max(1, Math.ceil((stats.subjectStats[sub].correct / stats.subjectStats[sub].total) * 5));
+                        return (
+                          <div key={star} className={`h-1.5 flex-1 rounded-full ${star <= level ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-white/5'}`} />
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
+                {Object.keys(stats.subjectStats).length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest">Start practicing to track mastery.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

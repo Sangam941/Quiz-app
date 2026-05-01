@@ -42,7 +42,7 @@ interface Attempt {
 
 export default function ResultsPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = use(params);
-  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const [attempt, setAttempt] = useState<(Attempt & { subjectName: string }) | null>(null);
   const [questions, setQuestions] = useState<Record<string, Question>>({});
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -55,7 +55,18 @@ export default function ResultsPage({ params }: { params: Promise<{ attemptId: s
         const attemptDoc = await getDoc(doc(db, 'attempts', attemptId));
         if (!active) return;
         if (attemptDoc.exists()) {
-          const data = { id: attemptDoc.id, ...attemptDoc.data() } as Attempt;
+          const attemptData = attemptDoc.data();
+          let subjectName = attemptData.subjectId;
+          try {
+            const subjectDoc = await getDoc(doc(db, 'subjects', attemptData.subjectId));
+            if (subjectDoc.exists()) {
+              subjectName = subjectDoc.data().name;
+            }
+          } catch (e) {
+            console.error("Failed to fetch subject", e);
+          }
+
+          const data = { id: attemptDoc.id, ...attemptData, subjectName } as Attempt & { subjectName: string };
           
           const mockPool = [
               { text: 'What is the primary goal of Macroeconomics?', options: ['Individual income', 'Overall economy performance', 'Company profits', 'Household savings'], correct: 1, explanation: 'Macroeconomics deals with performance of economy as a whole.' },
@@ -211,7 +222,7 @@ export default function ResultsPage({ params }: { params: Promise<{ attemptId: s
               <div className="p-4 bg-gray-50 rounded-2xl flex flex-col justify-center items-center">
                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Subject</div>
                  <div className="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-black text-blue-600 shadow-sm truncate max-w-full">
-                    {attempt.subjectId.toUpperCase()}
+                    {attempt.subjectName.toUpperCase()}
                  </div>
               </div>
             </div>

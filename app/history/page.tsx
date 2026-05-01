@@ -29,8 +29,22 @@ export default function HistoryPage() {
         where('userId', '==', user?.uid)
       );
       const snapshot = await getDocs(q);
+      
+      const subjectsSnapshot = await getDocs(collection(db, 'subjects'));
+      const subjectsMap: Record<string, string> = {};
+      subjectsSnapshot.docs.forEach(doc => {
+        subjectsMap[doc.id] = doc.data().name;
+      });
+
       const data = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => {
+          const attemptData = doc.data();
+          return { 
+            id: doc.id, 
+            ...attemptData,
+            subjectName: subjectsMap[attemptData.subjectId] || 'Practice Quiz'
+          };
+        })
         .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
       
       setAttempts(data);
@@ -91,7 +105,7 @@ export default function HistoryPage() {
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase pr-4">
-                                                {attempt.subjectId} Practice
+                                                {attempt.subjectName}
                                             </h3>
                                             <div className="flex items-center gap-4 mt-1">
                                                 <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">

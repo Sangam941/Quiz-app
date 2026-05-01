@@ -459,7 +459,16 @@ export default function QuestionsAdmin() {
                       <textarea 
                         value={bulkJson}
                         onChange={(e) => setBulkJson(e.target.value)}
-                        placeholder='[{"text": "Sample?", "options": ["A","B","C","D"], "correctAnswerIndex": 0, "difficulty": "easy", "explanation": "..."}]'
+                        placeholder={`[
+  {
+    "text": "What does CPU stand for?",
+    "options": ["Central Processing Unit", "Computer Personal Unit", "Central Program Unit", "Control Processing Unit"],
+    "correctAnswerIndex": 0,
+    "difficulty": "easy",
+    "explanation": "CPU stands for Central Processing Unit.",
+    "subjectName": "Computer"
+  }
+]`}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-mono text-[10px] text-white min-h-[300px]"
                       />
                       <button
