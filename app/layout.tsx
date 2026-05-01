@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <div className="relative z-10 min-h-screen">
             {children}
+            <Toaster position="bottom-right" />
           </div>
         </AuthProvider>
       </body>

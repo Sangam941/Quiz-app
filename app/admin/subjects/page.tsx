@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import { 
   Plus, 
@@ -73,7 +74,7 @@ export default function SubjectsAdmin() {
           icon,
         });
         setEditingSubject(null);
-        alert('Subject updated successfully!');
+        toast.success('Subject updated successfully!');
       } else {
         await addDoc(collection(db, 'subjects'), {
           name,
@@ -81,7 +82,7 @@ export default function SubjectsAdmin() {
           icon,
           createdAt: new Date().toISOString(),
         });
-        alert('Subject created successfully!');
+        toast.success('Subject created successfully!');
       }
       setName('');
       setDesc('');
@@ -89,7 +90,7 @@ export default function SubjectsAdmin() {
       fetchSubjects();
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -100,11 +101,11 @@ export default function SubjectsAdmin() {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'subjects', deleteId));
-      alert('Subject deleted!');
+      toast.success('Subject deleted!');
       setDeleteId(null);
       fetchSubjects();
     } catch (err: any) {
-      alert('Delete failed: ' + err.message);
+      toast.error('Delete failed: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
