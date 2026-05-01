@@ -12,19 +12,64 @@ import {
   ArrowRight,
   Database,
   BarChart,
-  Settings
+  Settings,
+  XCircle,
+  RefreshCw,
+  Library
 } from 'lucide-react';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 
 export default function AdminDashboard() {
   const { userData, loading } = useAuth();
   const router = useRouter();
+  
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    bankQuestions: 0,
+    pendingQuestions: 0,
+    totalSubjects: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && userData?.role !== 'admin') {
       router.push('/dashboard');
     }
   }, [userData, loading, router]);
+
+  useEffect(() => {
+    if (!loading && userData?.role === 'admin') {
+      const loadStats = async () => {
+        try {
+          setStatsLoading(true);
+          const usersSnap = await getCountFromServer(collection(db, 'users'));
+          
+          const pubQuery = query(collection(db, 'questions'), where('status', '==', 'published'));
+          const pubSnap = await getCountFromServer(pubQuery);
+          
+          const pendQuery = query(collection(db, 'questions'), where('status', '==', 'pending'));
+          const pendSnap = await getCountFromServer(pendQuery);
+          
+          const subSnap = await getCountFromServer(collection(db, 'subjects'));
+
+          setStats({
+            totalUsers: usersSnap.data().count,
+            bankQuestions: pubSnap.data().count,
+            pendingQuestions: pendSnap.data().count,
+            totalSubjects: subSnap.data().count,
+          });
+        } catch (e) {
+          console.error("Failed to fetch admin stats", e);
+        } finally {
+          setStatsLoading(false);
+        }
+      };
+      
+      loadStats();
+    }
+  }, [loading, userData]);
 
   if (loading || userData?.role !== 'admin') {
     return (
@@ -51,10 +96,10 @@ export default function AdminDashboard() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
            {[
-             { label: 'Total Users', value: '1,280', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-             { label: 'Bank Questions', value: '450', icon: FileQuestion, color: 'text-amber-600', bg: 'bg-amber-100' },
-             { label: 'Active Sessions', value: '42', icon: Database, color: 'text-green-600', bg: 'bg-green-100' },
-             { label: 'Avg Accuracy', value: '68%', icon: BarChart, color: 'text-purple-600', bg: 'bg-purple-100' },
+             { label: 'Total Users', value: statsLoading ? '...' : stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+             { label: 'Bank Questions', value: statsLoading ? '...' : stats.bankQuestions, icon: FileQuestion, color: 'text-green-600', bg: 'bg-green-100' },
+             { label: 'Pending Questions', value: statsLoading ? '...' : stats.pendingQuestions, icon: RefreshCw, color: 'text-amber-600', bg: 'bg-amber-100' },
+             { label: 'Total Subjects', value: statsLoading ? '...' : stats.totalSubjects, icon: Library, color: 'text-purple-600', bg: 'bg-purple-100' },
            ].map((stat, i) => (
              <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                 <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center mb-4`}>
